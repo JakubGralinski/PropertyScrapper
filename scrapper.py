@@ -10,57 +10,53 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
+from selenium_stealth import stealth  # Import stealth to bypass bot detection
 
 # -------------------------------
-# CONFIGURATION
+# Configuration
 # -------------------------------
 HOST_URL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/mazowieckie/warszawa"
-LISTINGS_CONTAINER_CLASS = "css-1pkwj40"  # **UPDATE THIS if needed**
+LISTINGS_CONTAINER_CLASS = "css-1pkwj40"  # **UPDATE** based on site inspection!
 
 
 # -------------------------------
-# INITIALIZE CHROME WEBDRIVER (WITH ANTI-DETECTION)
+# Initialize Chrome WebDriver
 # -------------------------------
 def init_chrome_driver():
     """
-    Initialize the Chrome WebDriver with anti-detection techniques.
+    Initialize the Chrome WebDriver with stealth mode.
     """
     chrome_options = Options()
-
-    # ✅ Remove headless mode for debugging (enable headless for automation)
-    # chrome_options.add_argument("--headless")  # Comment this for debugging
-
+    chrome_options.add_argument("--headless")  # Run without opening browser
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920x1080")
-
-    # 🛡️ Anti-bot detection bypass
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    chrome_options.add_experimental_option("useAutomationExtension", False)
-
-    # 🔄 Rotate Random User-Agent
-    USER_AGENTS = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    ]
-    random_user_agent = random.choice(USER_AGENTS)
-    chrome_options.add_argument(f"user-agent={random_user_agent}")
-
-    # 🌎 Set a Referrer (makes request look real)
-    chrome_options.add_argument("referer=https://www.google.com/")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")  # Prevent detection
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-infobars")
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+    # Apply stealth mode
+    stealth(driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+            )
+
     driver.implicitly_wait(10)  # Allow elements to load
     return driver
 
 
 # -------------------------------
-# DISMISS COOKIE BANNER
+# Dismiss Cookie Banner
 # -------------------------------
 def dismiss_cookie_banner(driver):
     """
-    Dismiss the cookie banner.
+    Dismiss the cookie banner by clicking "Akceptuję".
     """
     try:
         accept_button = WebDriverWait(driver, 5).until(
@@ -73,23 +69,23 @@ def dismiss_cookie_banner(driver):
 
 
 # -------------------------------
-# SCROLL TO LOAD LISTINGS
+# Scroll Down and Wait for JavaScript
 # -------------------------------
 def scroll_to_load(driver):
     """
-    Scrolls multiple times to load more listings.
+    Scroll multiple times to trigger lazy loading of listings.
     """
-    for _ in range(5):  # Adjust this if needed
+    for _ in range(5):  # Adjust if needed
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(2)  # Allow JavaScript to load
+        time.sleep(random.uniform(2, 5))  # Randomized delay to avoid detection
 
 
 # -------------------------------
-# LOAD PAGE AND WAIT FOR LISTINGS
+# Get Page and Wait for Listings
 # -------------------------------
 def get_listings(driver, url):
     """
-    Opens URL, dismisses cookie banner, scrolls, and returns parsed HTML.
+    Navigate to the given URL, dismiss cookie banner, scroll, and return BeautifulSoup object.
     """
     driver.get(url)
     dismiss_cookie_banner(driver)
@@ -111,11 +107,11 @@ def get_listings(driver, url):
 
 
 # -------------------------------
-# EXTRACT LISTINGS
+# Extract Listings
 # -------------------------------
 def extract_listings(soup):
     """
-    Extracts real estate listings from the parsed HTML.
+    Extract listings from the parsed HTML.
     """
     listings = []
 
@@ -124,7 +120,7 @@ def extract_listings(soup):
         print("❌ Listing container not found.")
         return listings
 
-    for listing in container.find_all("div", class_="css-19ucd76"):  # **UPDATE THIS CLASS if needed**
+    for listing in container.find_all("div", class_="css-19ucd76"):  # **UPDATE** based on site inspection!
         title = listing.find("h3").text.strip() if listing.find("h3") else "No title"
         price = listing.find("span", class_="css-1wi2w6s").text.strip() if listing.find("span",
                                                                                         class_="css-1wi2w6s") else "No price"
@@ -137,22 +133,22 @@ def extract_listings(soup):
 
 
 # -------------------------------
-# SAVE TO JSON
+# Save to JSON
 # -------------------------------
 def save_to_json(data, filename="listings.json"):
     """
-    Saves extracted listings to a JSON file.
+    Save listings to a JSON file.
     """
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 # -------------------------------
-# MAIN FUNCTION - SCRAPER LOGIC
+# Main Function
 # -------------------------------
 def scrape_otodom():
     """
-    Runs the scraper and saves listings to JSON.
+    Main function to scrape Otodom listings.
     """
     driver = init_chrome_driver()
     try:
@@ -166,8 +162,5 @@ def scrape_otodom():
         driver.quit()
 
 
-# -------------------------------
-# RUN THE SCRAPER
-# -------------------------------
 if __name__ == "__main__":
     scrape_otodom()
