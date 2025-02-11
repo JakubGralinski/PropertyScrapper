@@ -1,41 +1,31 @@
 import asyncio
-
 from crawl4ai import AsyncWebCrawler
 from dotenv import load_dotenv
-
 from config import BASE_URL, CSS_SELECTOR, REQUIRED_KEYS
-from utils.data_utils import (
-    save_venues_to_csv,
-)
-from utils.scraper_utils import (
-    fetch_and_process_page,
-    get_browser_config,
-    get_llm_strategy,
-)
+from utils.data_utils import save_properties_to_csv
+from utils.scraper_utils import fetch_and_process_page, get_browser_config, get_llm_strategy
 
 load_dotenv()
 
 
-async def crawl_venues():
+async def crawl_properties():
     """
-    Main function to crawl venue data from the website.
+    Main function to crawl property data from the website.
     """
     # Initialize configurations
     browser_config = get_browser_config()
     llm_strategy = get_llm_strategy()
-    session_id = "venue_crawl_session"
+    session_id = "property_crawl_session"
 
     # Initialize state variables
     page_number = 1
-    all_venues = []
+    all_properties = []
     seen_names = set()
 
     # Start the web crawler context
-    # https://docs.crawl4ai.com/api/async-webcrawler/#asyncwebcrawler
     async with AsyncWebCrawler(config=browser_config) as crawler:
         while True:
-            # Fetch and process data from the current page
-            venues, no_results_found = await fetch_and_process_page(
+            properties, no_results_found = await fetch_and_process_page(
                 crawler,
                 page_number,
                 BASE_URL,
@@ -47,36 +37,32 @@ async def crawl_venues():
             )
 
             if no_results_found:
-                print("No more venues found. Ending crawl.")
-                break  # Stop crawling when "No Results Found" message appears
+                print("No more properties found. Ending crawl.")
+                break
 
-            if not venues:
-                print(f"No venues extracted from page {page_number}.")
-                break  # Stop if no venues are extracted
+            if not properties:
+                print(f"No properties extracted from page {page_number}.")
+                break
 
-            # Add the venues from this page to the total list
-            all_venues.extend(venues)
-            page_number += 1  # Move to the next page
+            all_properties.extend(properties)
+            page_number += 1
 
-            # Pause between requests to be polite and avoid rate limits
-            await asyncio.sleep(2)  # Adjust sleep time as needed
+            # Pause between requests to avoid being rate-limited
+            await asyncio.sleep(2)
 
-    # Save the collected venues to a CSV file
-    if all_venues:
-        save_venues_to_csv(all_venues, "complete_venues.csv")
-        print(f"Saved {len(all_venues)} venues to 'complete_venues.csv'.")
+    # Save the collected properties to a CSV file
+    if all_properties:
+        save_properties_to_csv(all_properties, "properties.csv")
+        print(f"Saved {len(all_properties)} properties to 'properties.csv'.")
     else:
-        print("No venues were found during the crawl.")
-
-    # Display usage statistics for the LLM strategy
-    llm_strategy.show_usage()
+        print("No properties were found during the crawl.")
 
 
 async def main():
     """
     Entry point of the script.
     """
-    await crawl_venues()
+    await crawl_properties()
 
 
 if __name__ == "__main__":

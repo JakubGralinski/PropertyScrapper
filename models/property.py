@@ -9,7 +9,4 @@ class Property(BaseModel):
     name: str
     location: str
     price: str
-    capacity: str
-    rating: float
-    reviews: int
     description: str
