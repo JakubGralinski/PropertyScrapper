@@ -111,8 +111,6 @@ Use GridSearchCV to fine-tune models like Random Forest and XGBoost. Finer grids
 Create:
 	•	Static Maps: Using GeoPandas and Contextily for publication-quality visualizations. 🖼️
 	•	Interactive Maps: Using Folium and branca.colormap for dynamic exploration of housing data. 🌟
-	•	LLM-Based Extraction (Optional):
-Extend the crawler to use a language model extraction strategy (see models/property.py) to transform raw HTML into structured data automatically. 🤖💬
 
 
 ## 📚 Libraries Used
